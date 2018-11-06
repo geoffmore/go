@@ -85,6 +85,19 @@ func filesInPath(dir, hash string) {
 	// Variables are defined outside of the for-loop so they can be referenced
 	// below
 
+	var hashFunc func(string) ([]byte, error)
+	switch hash {
+
+	case "md5":
+		hashFunc = fileToMD5
+	case "sha256":
+		hashFunc = fileToSHA256
+	case "sha512":
+		hashFunc = fileToSHA512
+	default:
+		hashFunc = fileToMD5
+	}
+
 	// How do I make this range function asynchronous?
 	for _, file := range files {
 		fileName = file.Name()
@@ -93,19 +106,7 @@ func filesInPath(dir, hash string) {
 		if string(fileName[0]) != "." {
 			// Files get their hash calculated
 			if !file.IsDir() {
-				// A switch on every function call is heavy for what's essentially
-				// constant, but I don't see any other solutions atm
-				switch hash {
-
-				case "md5":
-					hashSum, _ = fileToMD5(filePath)
-				case "sha256":
-					hashSum, _ = fileToSHA256(filePath)
-				case "sha512":
-					hashSum, _ = fileToSHA512(filePath)
-				default:
-					hashSum, _ = fileToMD5(filePath)
-				}
+				hashSum, _ = hashFunc(filePath)
 				fmt.Printf("%s: %x\n", filePath, hashSum)
 				// Directories do not get their hash calculated
 			} else if file.IsDir() {
