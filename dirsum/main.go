@@ -15,6 +15,16 @@ import (
 var hashType string
 var dir string
 
+func openFile(fromText string) (*os.File, error) {
+	f, err := os.Open(fromText)
+	// I don't have a good solution for what to return on failure
+	// Maybe return both, handle err further down, don't copy if err != nil
+	if err != nil {
+		return nil, err
+	}
+	return f, err
+}
+
 func initFlags() {
 	// Initialize all command line flags to be processed in the go program.
 	flag.StringVar(&hashType, "hash", "md5", "hash type of output")
@@ -24,12 +34,7 @@ func initFlags() {
 
 func fileToMD5(text string) ([]byte, error) {
 	// Get the MD5 sum from a file
-	f, err := os.Open(text)
-	// I don't have a good solution for what to return on failure
-	// Maybe return both, handle err further down, don't copy if err != nil
-	if err != nil {
-		return nil, err
-	}
+	f, _ := openFile(text)
 	defer f.Close()
 
 	h := md5.New()
@@ -41,10 +46,7 @@ func fileToMD5(text string) ([]byte, error) {
 
 func fileToSHA256(text string) ([]byte, error) {
 	// Get the SHA-256 sum from a file
-	f, err := os.Open(text)
-	if err != nil {
-		return nil, err
-	}
+	f, _ := openFile(text)
 	defer f.Close()
 
 	h := sha256.New()
@@ -56,10 +58,7 @@ func fileToSHA256(text string) ([]byte, error) {
 
 func fileToSHA512(text string) ([]byte, error) {
 	// Get the SHA-512 sum from a file
-	f, err := os.Open(text)
-	if err != nil {
-		return nil, err
-	}
+	f, _ := openFile(text)
 	defer f.Close()
 
 	h := sha512.New()
@@ -72,7 +71,8 @@ func fileToSHA512(text string) ([]byte, error) {
 }
 
 func filesInPath(dir, hash string) {
-	// Calculates the hash of all files under a directory
+	// Calculates the hash of all files under a directory using one of several
+	// methods
 	// Currently fails on dotfiles
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
