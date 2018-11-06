@@ -28,6 +28,7 @@ func openFile(fromText string) (*os.File, error) {
 func initFlags() {
 	// Initialize all command line flags to be processed in the go program.
 	flag.StringVar(&hashType, "hash", "md5", "hash type of output")
+	// 'dir' needs to be stripped of it's trailing slash if it has one
 	flag.StringVar(&dir, "dir", ".", "starting directory for traversal")
 	flag.Parse()
 }
@@ -71,32 +72,45 @@ func fileToSHA512(text string) ([]byte, error) {
 }
 
 func filesInPath(dir, hash string) {
-	// Calculates the hash of all files under a directory using one of several
+	// Calculates the hash of all files under a directory using md5/sha256/sha512
 	// methods
-	// Currently fails on dotfiles
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var hashSum []byte
 	var filePath string
+	// fileName is defined here to grab the first character for later use
+	var fileName string
+	// Variables are defined outside of the for-loop so they can be referenced
+	// below
 
+	// How do I make this range function asynchronous?
 	for _, file := range files {
-		filePath = fmt.Sprintf("%s/%s", dir, file.Name())
-		if !file.IsDir() {
-			switch hash {
-			case "md5":
-				hashSum, _ = fileToMD5(filePath)
-			case "sha256":
-				hashSum, _ = fileToSHA256(filePath)
-			case "sha512":
-				hashSum, _ = fileToSHA512(filePath)
-			default:
-				hashSum, _ = fileToMD5(filePath)
+		fileName = file.Name()
+		filePath = fmt.Sprintf("%s/%s", dir, fileName)
+		// Ignore anything that starts with a '.' in the file name
+		if string(fileName[0]) != "." {
+			// Files get their hash calculated
+			if !file.IsDir() {
+				// A switch on every function call is heavy for what's essentially
+				// constant, but I don't see any other solutions atm
+				switch hash {
+
+				case "md5":
+					hashSum, _ = fileToMD5(filePath)
+				case "sha256":
+					hashSum, _ = fileToSHA256(filePath)
+				case "sha512":
+					hashSum, _ = fileToSHA512(filePath)
+				default:
+					hashSum, _ = fileToMD5(filePath)
+				}
+				fmt.Printf("%s: %x\n", filePath, hashSum)
+				// Directories do not get their hash calculated
+			} else if file.IsDir() {
+				filesInPath(filePath, hash)
 			}
-			fmt.Printf("%s: %x\n", filePath, hashSum)
-		} else if file.IsDir() {
-			filesInPath(filePath, hash)
 		}
 	}
 }
