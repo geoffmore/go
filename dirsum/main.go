@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	//"strings"
 )
 
 var hashType string
@@ -26,8 +25,10 @@ func initFlags() {
 func fileToMD5(text string) ([]byte, error) {
 	// Get the MD5 sum from a file
 	f, err := os.Open(text)
+	// I don't have a good solution for what to return on failure
+	// Maybe return both, handle err further down, don't copy if err != nil
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer f.Close()
 
@@ -42,7 +43,7 @@ func fileToSHA256(text string) ([]byte, error) {
 	// Get the SHA-256 sum from a file
 	f, err := os.Open(text)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer f.Close()
 
@@ -57,7 +58,7 @@ func fileToSHA512(text string) ([]byte, error) {
 	// Get the SHA-512 sum from a file
 	f, err := os.Open(text)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer f.Close()
 
@@ -70,35 +71,37 @@ func fileToSHA512(text string) ([]byte, error) {
 	//return h.Sum512(nil), nil
 }
 
-func filesInPath(dir string) {
+func filesInPath(dir, hash string) {
+	// Calculates the hash of all files under a directory
+	// Currently fails on dotfiles
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var fileName string
 	var hashSum []byte
 	var filePath string
 
 	for _, file := range files {
-		// completePath := join(filePath, filename, '/')
-		//filePath := dir
-		fileName = file.Name()
-		filePath = dir
+		filePath = fmt.Sprintf("%s/%s", dir, file.Name())
 		if !file.IsDir() {
-			hashSum, _ = fileToMD5(fileName)
-			// Printf here doesn't allow for recursion
-			fmt.Printf("%s/%s: %x\n",
-				filePath,
-				fileName,
-				hashSum,
-			)
+			switch hash {
+			case "md5":
+				hashSum, _ = fileToMD5(filePath)
+			case "sha256":
+				hashSum, _ = fileToSHA256(filePath)
+			case "sha512":
+				hashSum, _ = fileToSHA512(filePath)
+			default:
+				hashSum, _ = fileToMD5(filePath)
+			}
+			fmt.Printf("%s: %x\n", filePath, hashSum)
+		} else if file.IsDir() {
+			filesInPath(filePath, hash)
 		}
 	}
 }
+
 func main() {
 	initFlags()
-	fmt.Printf("hash: %s, dir:'%s'\n", hashType, dir)
-
-	startingDir := dir
-	filesInPath(startingDir)
+	filesInPath(dir, hashType)
 }
