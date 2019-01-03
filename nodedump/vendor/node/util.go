@@ -2,6 +2,8 @@ package node
 
 import (
 	"fmt"
+	"github.com/olekukonko/tablewriter"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -37,8 +39,21 @@ func genCommand(prefix, base, suffix string) string {
 
 func someFunc(origVal *string, present bool) {
 	if !present {
-		*origVal = "DNE"
+		*origVal = "---"
 	} else if *origVal == "" {
 		*origVal = "BLANK"
 	}
+}
+func makeTable(header []string, data [][]string) {
+	table := tablewriter.NewWriter(os.Stdout)
+
+	table.SetHeader(header)
+	table.SetAutoMergeCells(true)
+	table.SetRowLine(true)
+	// Column Colours should go here
+	table.SetBorder(false)
+
+	table.AppendBulk(data)
+
+	table.Render()
 }

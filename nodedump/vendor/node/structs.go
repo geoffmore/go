@@ -2,9 +2,7 @@ package node
 
 import (
 	"fmt"
-	"github.com/olekukonko/tablewriter"
 	k8s_core "k8s.io/api/core/v1"
-	"os"
 )
 
 type k8sNode struct {
@@ -45,7 +43,7 @@ func (k k8sNode) info() [][]string {
 	var nodeInfo [][]string
 
 	nodeInfo = append(nodeInfo,
-		[]string{headerPadding, "NODE INFO"},
+		[]string{"NODE INFO", ""},
 		[]string{"arch", k.arch},
 		[]string{"os", k.osType},
 		[]string{"os version", k.osImage},
@@ -58,7 +56,7 @@ func (k k8sNode) info() [][]string {
 
 func (k k8sNode) labels() [][]string {
 	var nodeLabels [][]string
-	nodeLabels = append(nodeLabels, []string{headerPadding, "LABELS"})
+	nodeLabels = append(nodeLabels, []string{"LABELS", ""})
 	for label, val := range k.nodeLabels {
 		someFunc(&val, true)
 		nodeLabels = append(nodeLabels, []string{label, val})
@@ -69,7 +67,7 @@ func (k k8sNode) labels() [][]string {
 func (k k8sNode) annotations() [][]string {
 	var nodeAnnotations [][]string
 
-	nodeAnnotations = append(nodeAnnotations, []string{headerPadding, "ANNOTATIONS"})
+	nodeAnnotations = append(nodeAnnotations, []string{"ANNOTATIONS", ""})
 	for annotation, val := range k.nodeAnnotations {
 		someFunc(&val, true)
 		nodeAnnotations = append(nodeAnnotations, []string{annotation, val})
@@ -80,7 +78,7 @@ func (k k8sNode) annotations() [][]string {
 func (k k8sNode) conditions() [][]string {
 	var nodeConditions [][]string
 	nodeConditions = append(nodeConditions,
-		[]string{headerPadding, "CONDITIONS"},
+		[]string{"CONDITIONS", ""},
 		[]string{"OutOfDisk", k.isOutOfDisk},
 		[]string{"DiskPressure", k.hasDiskPressure},
 		[]string{"MemoryPressure", k.hasMemPressure},
@@ -93,7 +91,7 @@ func (k k8sNode) conditions() [][]string {
 func (k k8sNode) resources() [][]string {
 	var nodeResources [][]string
 	nodeResources = append(nodeResources,
-		[]string{headerPadding, "RESOURCES"},
+		[]string{"RESOURCES", ""},
 		[]string{"Capacity", ""},
 		[]string{"cpu", fmt.Sprintf("%s", k.capacity.Cpu())},
 		[]string{"ephemeral-storage", fmt.Sprintf("%s", k.capacity.StorageEphemeral())},
@@ -123,7 +121,6 @@ func (k k8sNode) Dump() {
 		}
 		if specFlag {
 			data = append(data, k.resources()...)
-
 		}
 		if condFlag {
 			data = append(data, k.conditions()...)
@@ -136,20 +133,13 @@ func (k k8sNode) Dump() {
 		}
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", k.name})
-
-	for _, v := range data {
-		table.Append(v)
-	}
-	table.Render() // Send output
-
+	makeTable([]string{"Name", k.name}, data)
 }
 
 func (k k8sNode) infoDiff(k2 k8sNode) [][]string {
 	var infoDiff [][]string
 	infoDiff = append(infoDiff,
-		[]string{headerPadding, "NODE INFO", headerPadding},
+		[]string{"NODE INFO", "", ""},
 		[]string{"arch", k.arch, k2.arch},
 		[]string{"os", k.osType, k2.osType},
 		[]string{"os version", k.osImage, k2.osImage},
@@ -164,7 +154,7 @@ func (k k8sNode) resourceDiff(k2 k8sNode) [][]string {
 	var resourceDiff [][]string
 
 	resourceDiff = append(resourceDiff,
-		[]string{headerPadding, "RESOURCES", headerPadding},
+		[]string{"RESOURCES", "", ""},
 		[]string{"Capacity", "", ""},
 		[]string{"cpu", fmt.Sprintf("%s", k.capacity.Cpu()), fmt.Sprintf("%s", k2.capacity.Cpu())},
 		[]string{"ephemeral-storage", fmt.Sprintf("%s", k.capacity.StorageEphemeral()), fmt.Sprintf("%s", k2.capacity.StorageEphemeral())},
@@ -182,7 +172,7 @@ func (k k8sNode) resourceDiff(k2 k8sNode) [][]string {
 func (k k8sNode) conditionDiff(k2 k8sNode) [][]string {
 	var conditionDiff [][]string
 	conditionDiff = append(conditionDiff,
-		[]string{headerPadding, "CONDITIONS", headerPadding},
+		[]string{"CONDITIONS", "", ""},
 		[]string{"OutOfDisk", k.isOutOfDisk, k2.isOutOfDisk},
 		[]string{"DiskPressure", k.hasDiskPressure, k2.hasDiskPressure},
 		[]string{"MemoryPressure", k.hasMemPressure, k2.hasMemPressure},
@@ -195,7 +185,7 @@ func (k k8sNode) conditionDiff(k2 k8sNode) [][]string {
 func (k k8sNode) labelDiff(k2 k8sNode) [][]string {
 	var labelDiff [][]string
 
-	labelDiff = append(labelDiff, []string{headerPadding, "LABELS", headerPadding})
+	labelDiff = append(labelDiff, []string{"LABELS", "", ""})
 
 	var usedLabels []string
 	for label, val := range k.nodeLabels {
@@ -219,7 +209,7 @@ func (k k8sNode) labelDiff(k2 k8sNode) [][]string {
 func (k k8sNode) annotationDiff(k2 k8sNode) [][]string {
 	var annotationDiff [][]string
 	var usedAnnotations []string
-	annotationDiff = append(annotationDiff, []string{headerPadding, "ANNOTATIONS", headerPadding})
+	annotationDiff = append(annotationDiff, []string{"ANNOTATIONS", "", ""})
 
 	for annotation, val := range k.nodeAnnotations {
 		val2, exists := k.nodeAnnotations[annotation]
@@ -266,11 +256,14 @@ func (k k8sNode) Diff(k2 k8sNode) {
 		}
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", k.name, k2.name})
+	makeTable([]string{"Name", k.name, k2.name}, data)
+	//table := tablewriter.NewWriter(os.Stdout)
+	//table.SetHeader([]string{"Name", k.name, k2.name})
+	//table.SetAutoMergeCells(true)
+	//table.SetRowLine(true)
 
-	for _, v := range data {
-		table.Append(v)
-	}
-	table.Render() // Send output
+	//for _, v := range data {
+	//	table.Append(v)
+	//}
+	//table.Render() // Send output
 }
