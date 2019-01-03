@@ -1,8 +1,8 @@
 package main
 
 import (
-	"ephemeralsocks.co/kubeutil/node"
 	"flag"
+	"node"
 )
 
 func main() {
@@ -25,5 +25,4 @@ func main() {
 	} else {
 		node1.Dump()
 	}
-	// TODO - Make a help page
 }
